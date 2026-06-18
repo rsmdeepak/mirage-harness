@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirage — AI Hallucination & Red-Team Harness</title>
+<style>
+  :root{
+    --bg:#0b0e14; --bg2:#11161f; --fg:#e6edf3; --muted:#8b98a9;
+    --accent:#7c9cff; --accent2:#4fd1c5; --warn:#ffb454; --bad:#ff6b6b; --good:#5cd97a;
+    --card:#161c27; --border:#243044; --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);overflow:hidden}
+  #deck{height:100vh;width:100vw;position:relative}
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:6vh 8vw;justify-content:center;
+    animation:fade .35s ease;
+  }
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  h1{font-size:3.6rem;line-height:1.05;letter-spacing:-1.5px;margin-bottom:.4em}
+  h2{font-size:2.5rem;letter-spacing:-1px;margin-bottom:.7em;display:flex;align-items:center;gap:.5em}
+  h2 .num{font-family:var(--mono);font-size:1rem;color:var(--accent);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.25em .6em}
+  h3{font-size:1.35rem;color:var(--accent2);margin:.2em 0 .5em}
+  p,li{font-size:1.45rem;line-height:1.55;color:var(--fg)}
+  .muted{color:var(--muted)}
+  .lead{font-size:1.7rem;color:var(--muted);max-width:30ch;margin-bottom:.4em}
+  ul{list-style:none}
+  li{margin:.55em 0;padding-left:1.5em;position:relative}
+  li::before{content:"▸";position:absolute;left:0;color:var(--accent)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.95rem;color:var(--accent2);
+    border:1px solid var(--border);background:var(--card);border-radius:6px;padding:.2em .6em;margin:.2em .3em .2em 0}
+  .cols{display:flex;gap:2.5rem;align-items:stretch}
+  .col{flex:1}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem 1.6rem;margin:.5rem 0}
+  .card h3{margin-top:0}
+  code,pre{font-family:var(--mono)}
+  pre{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:1.3rem 1.6rem;
+    font-size:1.15rem;line-height:1.7;overflow:auto;color:#cdd9e5}
+  pre .c{color:var(--muted)}
+  pre .g{color:var(--good)}
+  pre .a{color:var(--accent)}
+  .pipe{display:flex;align-items:center;justify-content:center;gap:0;margin:1.2em 0;flex-wrap:wrap}
+  .node{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:1rem 1.4rem;text-align:center;min-width:140px}
+  .node b{font-size:1.4rem;color:var(--accent)}
+  .node span{display:block;font-size:.95rem;color:var(--muted);margin-top:.3em}
+  .arrow{color:var(--accent2);font-size:2rem;padding:0 .6rem}
+  .metrics{display:flex;gap:1.2rem;margin-top:.6em;flex-wrap:wrap}
+  .metric{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.5rem;text-align:center;flex:1;min-width:130px}
+  .metric .v{font-size:2.4rem;font-family:var(--mono);color:var(--good)}
+  .metric .k{font-size:1rem;color:var(--muted);margin-top:.2em}
+  .pill{font-family:var(--mono);font-size:1rem;padding:.2em .7em;border-radius:999px}
+  .pill.ok{background:rgba(92,217,122,.15);color:var(--good);border:1px solid rgba(92,217,122,.4)}
+  .pill.no{background:rgba(255,107,107,.13);color:var(--bad);border:1px solid rgba(255,107,107,.35)}
+  .pill.wip{background:rgba(255,180,84,.13);color:var(--warn);border:1px solid rgba(255,180,84,.35)}
+  .footer{position:absolute;bottom:2.5vh;left:8vw;right:8vw;display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:.85rem;color:var(--muted)}
+  .progress{position:absolute;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+  .kbd{font-family:var(--mono);font-size:.8rem;border:1px solid var(--border);border-radius:4px;padding:.1em .4em;color:var(--muted)}
+  .title-accent{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .big{font-size:2rem;line-height:1.4}
+  table{border-collapse:collapse;width:100%;font-size:1.15rem;margin-top:.5em}
+  td,th{border:1px solid var(--border);padding:.6em .9em;text-align:left}
+  th{color:var(--accent2);font-weight:600}
+  td .pill{font-size:.85rem}
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 1 -->
+  <section class="slide active">
+    <p class="lead">An AI lie detector for text, reasoning & pixels</p>
+    <h1 class="title-accent">Mirage</h1>
+    <p class="big muted">A multi-modal AI hallucination<br>& red-team harness</p>
+    <p class="muted" style="margin-top:2em">Attacker → Target → Judge → Report &nbsp;·&nbsp; validated before it's trusted</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <h2><span class="num">01</span>The problem</h2>
+    <p class="big">AI systems hallucinate — confidently stating things that aren't grounded, caving to misleading hints, or reasoning inconsistently.</p>
+    <div class="card" style="margin-top:1.2em">
+      <h3>The hard part</h3>
+      <p>How do you <b>detect</b> hallucination when you don't have perfect ground truth — and how do you <b>trust</b> the detector itself?</p>
+    </div>
+    <p class="muted" style="margin-top:1em">A detector you haven't validated is just another model that might be wrong.</p>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <h2><span class="num">02</span>The core idea</h2>
+    <p class="muted">One modality-agnostic pipeline. Each role is a single class behind an ABC.</p>
+    <div class="pipe">
+      <div class="node"><b>Attacker</b><span>generates adversarial inputs</span></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Target</b><span>black-box under test</span></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Judge bank</b><span>independent signals</span></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>Report</b><span>metrics + repro</span></div>
+    </div>
+    <ul>
+      <li>The Target is treated as a <b>black box</b> — text, reasoning, or (designed-in) pixels.</li>
+      <li>Swapping in a real LLM never touches the runner or the report.</li>
+    </ul>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide">
+    <h2><span class="num">03</span>The key insight</h2>
+    <p class="big">Validate the detector against <span style="color:var(--good)">known-good</span> and <span style="color:var(--bad)">known-bad</span> synthetic targets <i>before</i> pointing it at any real model.</p>
+    <div class="cols" style="margin-top:1em">
+      <div class="col card"><h3 style="color:var(--good)">Known-good bot</h3><p>Answers correctly, stays grounded, refuses when it should. Should <b>not</b> be flagged.</p></div>
+      <div class="col card"><h3 style="color:var(--bad)">Known-bad bot</h3><p>Hallucinates, invents claims, caves to hints. Should <b>always</b> be flagged.</p></div>
+    </div>
+    <p class="muted" style="margin-top:1em">If the detector can't separate the bots we built, it can't be trusted on models we didn't.</p>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide">
+    <h2><span class="num">04</span>What's implemented today</h2>
+    <div class="cols">
+      <div class="col card">
+        <h3>RAG / groundedness <span class="pill ok">live</span></h3>
+        <ul>
+          <li>Groundedness judge (lexical-overlap baseline) — <i>primary</i></li>
+          <li>Independent novel-claim judge</li>
+          <li>→ feeds the agreement diagnostic</li>
+        </ul>
+      </div>
+      <div class="col card">
+        <h3>Reasoning <span class="pill ok">live</span></h3>
+        <ul>
+          <li>Answer correctness</li>
+          <li>Misleading-hint resistance</li>
+          <li>Explanation ↔ final-answer consistency</li>
+          <li>Overthinking heuristic</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:.6em">Runs entirely on deterministic synthetic targets — <b>no Ollama / torch / downloads</b>.</p>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide">
+    <h2><span class="num">05</span>The judge bank</h2>
+    <p class="muted">Multi-signal by design — the primary judge drives the verdict, the rest are diagnostics.</p>
+    <ul>
+      <li><b>Primary judge</b> drives the flag decision.</li>
+      <li><b>Secondary judges</b> contribute independent signals + a <b>Judge Agreement</b> metric.</li>
+      <li>Agreement is a <i>diagnostic, not a quality score</i> — judges can agree and still be wrong.</li>
+      <li><b>Crash containment:</b> a judge that raises is caught. If the <i>primary</i> errors, the verdict is <code>errored</code> — <b>never a silent pass</b>.</li>
+    </ul>
+    <p class="muted" style="margin-top:.6em">Opt-in judges ready to wire in: <span class="tag">NLI entailment</span><span class="tag">citation faithfulness</span><span class="tag">self-consistency</span></p>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <h2><span class="num">06</span>Metrics &amp; validation</h2>
+    <p class="muted">Paired known-good/known-bad runs → standard detector confusion metrics.</p>
+    <div class="metrics">
+      <div class="metric"><div class="v">1.0</div><div class="k">TPR (recall)</div></div>
+      <div class="metric"><div class="v">1.0</div><div class="k">TNR</div></div>
+      <div class="metric"><div class="v">0.0</div><div class="k">FPR</div></div>
+      <div class="metric"><div class="v">0.0</div><div class="k">FNR</div></div>
+    </div>
+    <pre style="margin-top:1.2em"><span class="c">=== MVP acceptance criteria ===</span>
+  golden cases : 22 (target ≥ 20)   <span class="g">PASS</span>
+  scored evals : 38
+  TPR          : 1.0 (target ≥ 0.80) <span class="g">PASS</span>
+  FPR          : 0.0 (target &lt; 0.20) <span class="g">PASS</span></pre>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <h2><span class="num">07</span>Reproducibility is built in</h2>
+    <p class="big">A report can't ship without its config.</p>
+    <p class="muted" style="margin:.4em 0 1em">Every <code>RunSession</code> export embeds:</p>
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li>Attacker / target / judge config</li>
+          <li>Expected-label mode</li>
+          <li>Golden source paths</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li>Per-case seed + raw target output</li>
+          <li>Timestamp, git commit, Python, platform</li>
+          <li>Dependency versions</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:.6em">Exports as both Markdown (escaped) and JSON.</p>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <h2><span class="num">08</span>Honest scope &amp; limitations</h2>
+    <table>
+      <tr><th>Capability</th><th>Status</th></tr>
+      <tr><td>RAG groundedness — <i>lexical-overlap baseline</i></td><td><span class="pill ok">live</span></td></tr>
+      <tr><td>Reasoning (correctness / hints / consistency)</td><td><span class="pill ok">live</span></td></tr>
+      <tr><td>NLI entailment judge (needs transformers + torch)</td><td><span class="pill wip">coded · deps off</span></td></tr>
+      <tr><td>Citation &amp; self-consistency judges</td><td><span class="pill wip">opt-in</span></td></tr>
+      <tr><td>Image / VLM modality</td><td><span class="pill no">designed, not shipped</span></td></tr>
+    </table>
+    <p class="muted" style="margin-top:.8em">Baseline failure modes are documented as deliberately "wrong-on-purpose" regression tests — the targets to beat when NLI lands.</p>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <h2><span class="num">09</span>Live demo</h2>
+    <pre><span class="c"># 1. Acceptance tests — 35 passing</span>
+python -m pytest -q
+
+<span class="c"># 2. Self-validate the detector, write reports/</span>
+python run_validation.py
+
+<span class="c"># 3. Interactive dashboard</span>
+streamlit run app/streamlit_app.py   <span class="c"># → localhost:8501</span></pre>
+    <p class="muted" style="margin-top:1em">No model downloads. Everything is deterministic and reproducible.</p>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide">
+    <h2><span class="num">10</span>Roadmap — swap synthetic → real</h2>
+    <p class="muted">The interfaces don't change; only the implementations do.</p>
+    <ul>
+      <li><b>NLI groundedness judge</b> — replace lexical overlap with DeBERTa-MNLI entailment.</li>
+      <li><b>Real RAG target</b> — <code>Target.respond</code> over Ollama + ChromaDB.</li>
+      <li><b>Adaptive attacker</b> — an LLM that learns from past successes.</li>
+      <li><b>Image module (bonus)</b> — image Target + VLM Judge; runner, report &amp; dashboard unchanged.</li>
+    </ul>
+    <p class="muted" style="margin-top:.6em">Methodology: calibrate thresholds on synthetic bots first, <i>then</i> aim at real models.</p>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide">
+    <h2><span class="num">11</span>Takeaway</h2>
+    <p class="big">Mirage is a <span class="title-accent">reproducible red-team &amp; evaluation harness</span> for hallucination and reasoning-failure detectors.</p>
+    <div class="card" style="margin-top:1.2em">
+      <p>It earns trust the right way: <b>validated against synthetic known-good / known-bad targets</b> with real detector metrics before any production model is wired in.</p>
+    </div>
+    <p class="muted" style="margin-top:1.5em">Modality-agnostic core · 35 tests green · TPR 1.0 / FPR 0.0 on 22 golden cases</p>
+    <p style="margin-top:1.5em;font-size:1.8rem" class="title-accent">Thank you — questions?</p>
+  </section>
+
+</div>
+
+<div class="progress" id="bar"></div>
+<div class="footer">
+  <span>Mirage · AI Hallucination &amp; Red-Team Harness</span>
+  <span><span class="kbd">←</span> <span class="kbd">→</span> navigate · <span class="kbd">F</span> fullscreen · <span id="count"></span></span>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0;
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('bar').style.width=((i+1)/slides.length*100)+'%';
+    document.getElementById('count').textContent=(i+1)+' / '+slides.length;
+    location.hash=i+1;
+  }
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight',' ','PageDown'].includes(e.key)){show(i+1);e.preventDefault();}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){show(i-1);e.preventDefault();}
+    else if(e.key==='Home'){show(0);}
+    else if(e.key==='End'){show(slides.length-1);}
+    else if(e.key.toLowerCase()==='f'){
+      if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+  document.addEventListener('click',e=>{ if(e.clientX > window.innerWidth*0.5) show(i+1); else show(i-1); });
+  const start=parseInt(location.hash.slice(1));
+  show(isNaN(start)?0:start-1);
+</script>
+</body>
+</html>

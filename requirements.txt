@@ -1,0 +1,14 @@
+# --- MVP core (pure Python; no model downloads needed) ---
+pytest>=7.4
+
+# --- Dashboard ---
+streamlit>=1.30
+pandas>=2.0
+
+# --- Optional: real targets & judges (uncomment as you wire them in) ---
+# ollama>=0.3            # local LLM targets / attacker / LLM-as-judge
+# transformers>=4.40     # NLI groundedness judge (e.g. DeBERTa-MNLI)
+# torch>=2.2             # backend for transformers / diffusers
+# sentence-transformers>=2.7
+# chromadb>=0.5          # vector store for a real RAG target
+# diffusers>=0.27        # image-generation target (bonus module)
