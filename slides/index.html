@@ -96,7 +96,7 @@
   <!-- 3 -->
   <section class="slide">
     <h2><span class="num">02</span>The core idea</h2>
-    <p class="muted">One modality-agnostic pipeline. Each role is a single class behind an ABC (Abstract Base Class).</p>
+    <p class="muted">One modality-agnostic pipeline. Each role follows a shared interface.</p>
     <div class="pipe">
       <div class="node"><b>Attacker</b><span>generates adversarial inputs</span></div>
       <div class="arrow">→</div>
@@ -209,7 +209,7 @@
         </ul>
       </div>
     </div>
-    <p class="muted" style="margin-top:.6em">Runs entirely on deterministic synthetic targets — <b>no Ollama / torch / downloads</b>.</p>
+    <p class="muted" style="margin-top:.6em">Runs deterministically today so the detector can be <b>validated before connecting real models</b>.</p>
   </section>
 
   <!-- 6 -->
@@ -308,7 +308,7 @@
       <tr><td>Reasoning (correctness / hints / consistency)</td><td><span class="pill ok">live</span></td></tr>
       <tr><td>NLI entailment judge (needs transformers + torch)</td><td><span class="pill wip">coded · deps off</span></td></tr>
       <tr><td>Citation &amp; self-consistency judges</td><td><span class="pill wip">opt-in</span></td></tr>
-      <tr><td>Image / VLM modality</td><td><span class="pill no">designed, not shipped</span></td></tr>
+      <tr><td>Image / VLM modality</td><td><span class="pill no">interface-ready · roadmap</span></td></tr>
     </table>
     <p class="muted" style="margin-top:.8em">Multi-hop and outdated-context prompts are included, but default detection still treats them as groundedness failures — not true multi-hop or staleness reasoning.</p>
     <p class="muted" style="margin-top:.4em">Baseline failure modes are documented as deliberately "wrong-on-purpose" regression tests — the targets to beat when NLI lands.</p>
@@ -384,7 +384,7 @@ streamlit run app/streamlit_app.py   <span class="c"># → localhost:8501</span>
       <p>It earns trust the right way: <b>validated against synthetic known-good / known-bad targets</b> with real detector metrics before any production model is wired in.</p>
     </div>
     <p class="muted" style="margin-top:1em">This is a reproducible MVP harness — <b>not a production hallucination detector yet</b>.</p>
-    <p class="muted" style="margin-top:.8em">Modality-agnostic core · 47 tests green · TPR 1.0 / FPR 0.0 on 42 golden cases</p>
+    <p class="muted" style="margin-top:.8em">Modality-agnostic core · 47 tests green · TPR 1.0 / FPR 0.0 on 42 controlled synthetic golden tests</p>
     <p style="margin-top:1.5em;font-size:1.8rem" class="title-accent">Thank you — questions?</p>
   </section>
 
