@@ -37,3 +37,42 @@ def test_limitation_paraphrased_grounded_answer_is_false_flagged():
     sig = judge.evaluate(_case(context), TargetResponse("L", answer))
     assert sig["flag"] is True           # <-- known limitation (should be False)
     assert sig["score"] < 0.45
+
+
+def test_limitation_second_smuggled_claim_is_missed():
+    """Second false-negative example (mirrors demos/baseline_limitations_demo).
+    The unsupported 'water damage to phones' clause rides on top of fully
+    grounded warranty wording, so overlap stays above threshold."""
+    judge = GroundednessJudge()
+    context = "The warranty covers manufacturing defects on kitchen appliances for one year."
+    answer = ("The warranty covers manufacturing defects on kitchen appliances "
+              "for one year, and also covers accidental water damage to phones.")
+    sig = judge.evaluate(_case(context), TargetResponse("L", answer))
+    assert sig["flag"] is False          # <-- known limitation (should be True)
+    assert sig["score"] >= 0.45
+
+
+def test_limitation_second_paraphrase_is_false_flagged():
+    """Second false-positive example: a correct answer ('three weeks' == 15
+    days of leave) phrased with no shared content words is wrongly flagged."""
+    judge = GroundednessJudge()
+    context = "Employees accrue 15 vacation days per year."
+    answer = "Staff earn three weeks of annual paid leave."
+    sig = judge.evaluate(_case(context), TargetResponse("L", answer))
+    assert sig["flag"] is True           # <-- known limitation (should be False)
+    assert sig["score"] < 0.45
+
+
+def test_demo_confusion_matrix_has_nonzero_fpr_and_fnr():
+    """The standalone demo exists to show the lexical baseline producing real
+    false positives AND false negatives. Guard that property so the demo can't
+    silently regress to a perfectly-separable (and misleading) result."""
+    from demos.baseline_limitations_demo import CASES
+
+    judge = GroundednessJudge()
+    fp = fn = 0
+    for should_flag, ctx, ans, _note in CASES:
+        flagged = judge.evaluate(_case(ctx), TargetResponse("L", ans))["flag"]
+        fn += should_flag and not flagged
+        fp += (not should_flag) and flagged
+    assert fp > 0 and fn > 0
