@@ -37,7 +37,7 @@
     border:1px solid var(--border);background:var(--card);border-radius:6px;padding:.2em .6em;margin:.2em .3em .2em 0}
   .cols{display:flex;gap:2.5rem;align-items:stretch}
   .col{flex:1}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem 1.6rem;margin:.5rem 0}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.4rem 1.6rem;margin:.5rem 0}
   .card h3{margin-top:0}
   code,pre{font-family:var(--mono)}
   pre{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:1.3rem 1.6rem;
@@ -76,9 +76,9 @@
 
   <!-- 1 -->
   <section class="slide active">
-    <p class="lead">An AI lie detector for text, reasoning & pixels</p>
+    <p class="lead">A modality-ready harness for hallucination &amp; reasoning failures</p>
     <h1 class="title-accent">Mirage</h1>
-    <p class="big muted">A multi-modal AI hallucination<br>& red-team harness</p>
+    <p class="big muted">A text-first AI hallucination<br>& red-team harness</p>
     <p class="muted" style="margin-top:2em">Attacker → Target → Judge → Report &nbsp;·&nbsp; validated before it's trusted</p>
   </section>
 
@@ -96,7 +96,7 @@
   <!-- 3 -->
   <section class="slide">
     <h2><span class="num">02</span>The core idea</h2>
-    <p class="muted">One modality-agnostic pipeline. Each role is a single class behind an ABC.</p>
+    <p class="muted">One modality-agnostic pipeline. Each role is a single class behind an ABC (Abstract Base Class).</p>
     <div class="pipe">
       <div class="node"><b>Attacker</b><span>generates adversarial inputs</span></div>
       <div class="arrow">→</div>
@@ -112,13 +112,77 @@
     </ul>
   </section>
 
+  <!-- 3a — worked example · Attacker -->
+  <section class="slide">
+    <h2><span class="num">EX</span>Worked example · ① Attacker</h2>
+    <p style="font-family:var(--mono);font-size:1.05rem;margin-bottom:.8em"><span style="color:var(--accent)">Attacker</span><span class="muted"> → Target → Judge → Report</span></p>
+    <p class="muted">The attacker crafts an input built to trip the target — here, an <b>unanswerable</b> question.</p>
+    <div class="cols" style="margin-top:.6em">
+      <div class="col card">
+        <h3>Source the bot may use</h3>
+        <pre style="font-size:1.05rem">The return policy applies only to
+<span class="g">clothing</span> items — 30 days, with receipt.
+<span class="c"># electronics: not mentioned</span></pre>
+      </div>
+      <div class="col card">
+        <h3>Attack prompt</h3>
+        <p class="big">“What is the return policy for <b>electronics</b>?”</p>
+        <p style="margin-top:.6em"><span class="tag">unanswerable</span> electronics aren't in the source — a grounded bot must refuse.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3b — worked example · Target -->
+  <section class="slide">
+    <h2><span class="num">EX</span>Worked example · ② Target</h2>
+    <p style="font-family:var(--mono);font-size:1.05rem;margin-bottom:.8em"><span class="muted">Attacker → </span><span style="color:var(--accent)">Target</span><span class="muted"> → Judge → Report</span></p>
+    <p class="muted">The target is a <b>black-box</b> RAG bot. A <i>bad</i> target answers confidently anyway.</p>
+    <div class="card" style="margin-top:.6em">
+      <h3>Target response</h3>
+      <p class="big" style="color:var(--bad)">“Electronics can be returned within 30 days with a receipt.”</p>
+    </div>
+    <p class="muted" style="margin-top:1em">Fluent, confident — and completely <b>ungrounded</b>. The source never mentions electronics; the bot invented the policy. This is exactly the failure Mirage hunts for.</p>
+  </section>
+
+  <!-- 3c — worked example · Judge -->
+  <section class="slide">
+    <h2><span class="num">EX</span>Worked example · ③ Judge</h2>
+    <p style="font-family:var(--mono);font-size:1.05rem;margin-bottom:.8em"><span class="muted">Attacker → Target → </span><span style="color:var(--accent)">Judge</span><span class="muted"> → Report</span></p>
+    <p class="muted">The judge bank checks the answer against the source — primary signal is groundedness.</p>
+    <div class="card" style="margin-top:.6em">
+      <p style="font-size:1.5rem"><span class="pill no">FAIL</span> &nbsp; unsupported hallucination</p>
+      <p style="margin-top:.6em"><b>Reason:</b> the source contains no claim about electronics returns, so the answer isn't entailed by the context.</p>
+    </div>
+    <ul>
+      <li><b>Groundedness</b> (primary): answer not supported by context → <b>flag</b></li>
+      <li><b>Novel-claim</b> (secondary): “electronics … 30 days” is an unsupported new claim → <b>agrees</b></li>
+    </ul>
+  </section>
+
+  <!-- 3d — worked example · Report -->
+  <section class="slide">
+    <h2><span class="num">EX</span>Worked example · ④ Report</h2>
+    <p style="font-family:var(--mono);font-size:1.05rem;margin-bottom:.8em"><span class="muted">Attacker → Target → Judge → </span><span style="color:var(--accent)">Report</span></p>
+    <p class="muted">The verdict is recorded with its metric impact and everything needed to replay it.</p>
+    <table style="margin-top:.4em">
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Attack type</td><td>Unanswerable question</td></tr>
+      <tr><td>Target answer</td><td>“Electronics can be returned within 30 days.”</td></tr>
+      <tr><td>Expected behaviour</td><td>“Not found in the provided sources.”</td></tr>
+      <tr><td>Verdict</td><td><span class="pill no">FAIL</span> — unsupported hallucination</td></tr>
+      <tr><td>Metric impact</td><td><span class="pill ok">True Positive</span></td></tr>
+      <tr><td>Suggested fix</td><td>Constrain the model to answer only from retrieved context.</td></tr>
+    </table>
+    <p class="muted" style="margin-top:.7em">Stored alongside: seed · attacker / target / judge config · git commit · Python &amp; dependency versions — so the result replays exactly.</p>
+  </section>
+
   <!-- 4 -->
   <section class="slide">
     <h2><span class="num">03</span>The key insight</h2>
     <p class="big">Validate the detector against <span style="color:var(--good)">known-good</span> and <span style="color:var(--bad)">known-bad</span> synthetic targets <i>before</i> pointing it at any real model.</p>
     <div class="cols" style="margin-top:1em">
       <div class="col card"><h3 style="color:var(--good)">Known-good bot</h3><p>Answers correctly, stays grounded, refuses when it should. Should <b>not</b> be flagged.</p></div>
-      <div class="col card"><h3 style="color:var(--bad)">Known-bad bot</h3><p>Hallucinates, invents claims, caves to hints. Should <b>always</b> be flagged.</p></div>
+      <div class="col card"><h3 style="color:var(--bad)">Known-bad bot</h3><p>Hallucinates, invents claims, caves to hints. Designed to <b>trigger</b> the detector.</p></div>
     </div>
     <p class="muted" style="margin-top:1em">If the detector can't separate the bots we built, it can't be trusted on models we didn't.</p>
   </section>
@@ -172,10 +236,17 @@
       <div class="metric"><div class="v">0.0</div><div class="k">FNR</div></div>
     </div>
     <pre style="margin-top:1.2em"><span class="c">=== MVP acceptance criteria ===</span>
-  golden cases : 22 (target ≥ 20)   <span class="g">PASS</span>
-  scored evals : 38
+  golden cases : 42 (target ≥ 20)   <span class="g">PASS</span>
+  scored evals : 73
   TPR          : 1.0 (target ≥ 0.80) <span class="g">PASS</span>
   FPR          : 0.0 (target &lt; 0.20) <span class="g">PASS</span></pre>
+    <table style="position:absolute;right:8vw;bottom:8.5vh;width:auto;font-size:.6rem">
+      <tr><th>Short</th><th>Full Form</th><th>Meaning in Mirage</th></tr>
+      <tr><td><b style="color:var(--good)">TPR</b></td><td>True Positive Rate</td><td>Bad AI outputs correctly flagged</td></tr>
+      <tr><td><b style="color:var(--good)">TNR</b></td><td>True Negative Rate</td><td>Good AI outputs correctly passed</td></tr>
+      <tr><td><b style="color:var(--bad)">FPR</b></td><td>False Positive Rate</td><td>Good AI outputs wrongly flagged</td></tr>
+      <tr><td><b style="color:var(--bad)">FNR</b></td><td>False Negative Rate</td><td>Bad AI outputs missed</td></tr>
+    </table>
   </section>
 
   <!-- 8 -->
@@ -194,6 +265,7 @@
       <div class="col">
         <ul>
           <li>Per-case seed + raw target output</li>
+          <li>Per-case <code>suggested_fix</code> on flagged/errored cases</li>
           <li>Timestamp, git commit, Python, platform</li>
           <li>Dependency versions</li>
         </ul>
@@ -202,7 +274,32 @@
     <p class="muted" style="margin-top:.6em">Exports as both Markdown (escaped) and JSON.</p>
   </section>
 
-  <!-- 9 -->
+  <!-- 9 — where the lexical baseline fails -->
+  <section class="slide">
+    <h2><span class="num">EX</span>Where the lexical baseline fails</h2>
+    <p class="muted">On the synthetic oracle, FPR/FNR = 0 by design. On <b>adversarial</b> inputs the lexical judge — which counts word overlap, not entailment — breaks both ways.</p>
+    <div class="cols" style="margin-top:.5em">
+      <div class="col card">
+        <h3 style="color:var(--bad)">False negative — missed</h3>
+        <p>Answer parrots the context, then smuggles in an unsupported claim.</p>
+        <p class="muted" style="font-size:1.1rem;margin-top:.4em">“…30-day clothing refund <b>… and electronics get a full cash refund.</b>” &nbsp;→ overlap <b>0.57</b> ≥ 0.45 → not flagged</p>
+      </div>
+      <div class="col card">
+        <h3 style="color:var(--bad)">False positive — false alarm</h3>
+        <p>Correct answer, paraphrased with synonyms → few shared words.</p>
+        <p class="muted" style="font-size:1.1rem;margin-top:.4em">ctx “15 vacation days” vs “<b>three weeks of paid leave</b>” &nbsp;→ overlap <b>0.00</b> &lt; 0.45 → wrongly flagged</p>
+      </div>
+    </div>
+    <div class="metrics" style="margin-top:.8em">
+      <div class="metric"><div class="v">0.5</div><div class="k">TPR</div></div>
+      <div class="metric"><div class="v">0.5</div><div class="k">TNR</div></div>
+      <div class="metric"><div class="v" style="color:var(--bad)">0.5</div><div class="k">FPR</div></div>
+      <div class="metric"><div class="v" style="color:var(--bad)">0.5</div><div class="k">FNR</div></div>
+    </div>
+    <p class="muted" style="margin-top:.7em"><code>demos/baseline_limitations_demo.py</code> · the regression target the <b>NLI entailment</b> judge is built to beat.</p>
+  </section>
+
+  <!-- 10 -->
   <section class="slide">
     <h2><span class="num">08</span>Honest scope &amp; limitations</h2>
     <table>
@@ -213,13 +310,48 @@
       <tr><td>Citation &amp; self-consistency judges</td><td><span class="pill wip">opt-in</span></td></tr>
       <tr><td>Image / VLM modality</td><td><span class="pill no">designed, not shipped</span></td></tr>
     </table>
-    <p class="muted" style="margin-top:.8em">Baseline failure modes are documented as deliberately "wrong-on-purpose" regression tests — the targets to beat when NLI lands.</p>
+    <p class="muted" style="margin-top:.8em">Multi-hop and outdated-context prompts are included, but default detection still treats them as groundedness failures — not true multi-hop or staleness reasoning.</p>
+    <p class="muted" style="margin-top:.4em">Baseline failure modes are documented as deliberately "wrong-on-purpose" regression tests — the targets to beat when NLI lands.</p>
   </section>
 
-  <!-- 10 -->
+  <!-- 10 — course coverage -->
   <section class="slide">
-    <h2><span class="num">09</span>Live demo</h2>
-    <pre><span class="c"># 1. Acceptance tests — 35 passing</span>
+    <h2><span class="num">09</span>How it maps to the course</h2>
+    <p class="muted">Mirage operationalizes the <b>evaluation thread</b> that runs through every week.</p>
+    <table>
+      <tr><th>Week</th><th>What Mirage covers</th><th>Depth</th></tr>
+      <tr><td>1 · LLM Foundations</td><td>LLM evaluation — LLM-as-judge, benchmarks, GSM8K-style reasoning</td><td><span class="pill wip">eval slice</span></td></tr>
+      <tr><td>2 · Prompt Eng &amp; RAG</td><td>RAG <b>faithfulness</b>, grounding, answer-correctness, citation, CoT</td><td><span class="pill ok">core</span></td></tr>
+      <tr><td>3 · Agents</td><td>Evaluator–Optimizer pattern · agent-evaluation metrics · the pipeline</td><td><span class="pill ok">architecture</span></td></tr>
+      <tr><td>4 · Reasoning Models</td><td>Reasoning robustness · <b>self-consistency</b> · verifiers · overthinking</td><td><span class="pill ok">core</span></td></tr>
+      <tr><td>5 · Image &amp; Video</td><td>Image–text alignment / prompt adherence (VLM judge)</td><td><span class="pill no">bonus</span></td></tr>
+    </table>
+    <p class="muted" style="margin-top:.8em">Out of scope by design: model <b>training</b> &amp; <b>generation</b> — pre/post-training, fine-tuning, building retrieval indexes, MCP/agent tooling, diffusion.</p>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide">
+    <h2><span class="num">10</span>Where it lives</h2>
+    <p class="muted">One role per module — the pipeline maps straight onto the tree.</p>
+    <table>
+      <tr><th>Module</th><th>Responsibility</th></tr>
+      <tr><td><code>core/interfaces.py</code></td><td>ABCs for Attacker / Target / Judge — the contract everything swaps behind</td></tr>
+      <tr><td><code>attackers/golden.py</code></td><td>Golden-case attacker — deterministic adversarial inputs</td></tr>
+      <tr><td><code>targets/synthetic.py</code></td><td>Known-good / known-bad synthetic bots under test</td></tr>
+      <tr><td><code>judges/</code></td><td>Judge bank — groundedness, novelty, reasoning, NLI, citation</td></tr>
+      <tr><td><code>runner.py</code> · <code>validation.py</code></td><td>Orchestration + paired confusion-metric validation</td></tr>
+      <tr><td><code>report/report.py</code> · <code>app/streamlit_app.py</code></td><td>Reproducible Markdown/JSON export + dashboard</td></tr>
+    </table>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide">
+    <h2><span class="num">11</span>Live demo</h2>
+    <pre><span class="c"># 0. Setup — virtual env + dependencies (first time only)</span>
+python -m venv .venv <span class="a">&amp;&amp;</span> source .venv/bin/activate
+pip install -r requirements.txt
+
+<span class="c"># 1. Acceptance tests — 47 passing</span>
 python -m pytest -q
 
 <span class="c"># 2. Self-validate the detector, write reports/</span>
@@ -227,12 +359,13 @@ python run_validation.py
 
 <span class="c"># 3. Interactive dashboard</span>
 streamlit run app/streamlit_app.py   <span class="c"># → localhost:8501</span></pre>
-    <p class="muted" style="margin-top:1em">No model downloads. Everything is deterministic and reproducible.</p>
+    <p class="muted" style="margin-top:.8em">Dashboard modes: single-target run · paired validation (1.0 / 0.0) · <b>adversarial stress test</b> (0.5 / 0.5) · Markdown/JSON downloads.</p>
+    <p class="muted" style="margin-top:1em">No model downloads, Ollama, torch, or external APIs. Everything is deterministic and reproducible.</p>
   </section>
 
-  <!-- 11 -->
+  <!-- 13 -->
   <section class="slide">
-    <h2><span class="num">10</span>Roadmap — swap synthetic → real</h2>
+    <h2><span class="num">12</span>Roadmap — swap synthetic → real</h2>
     <p class="muted">The interfaces don't change; only the implementations do.</p>
     <ul>
       <li><b>NLI groundedness judge</b> — replace lexical overlap with DeBERTa-MNLI entailment.</li>
@@ -243,15 +376,24 @@ streamlit run app/streamlit_app.py   <span class="c"># → localhost:8501</span>
     <p class="muted" style="margin-top:.6em">Methodology: calibrate thresholds on synthetic bots first, <i>then</i> aim at real models.</p>
   </section>
 
-  <!-- 12 -->
+  <!-- 14 -->
   <section class="slide">
-    <h2><span class="num">11</span>Takeaway</h2>
+    <h2><span class="num">13</span>Takeaway</h2>
     <p class="big">Mirage is a <span class="title-accent">reproducible red-team &amp; evaluation harness</span> for hallucination and reasoning-failure detectors.</p>
     <div class="card" style="margin-top:1.2em">
       <p>It earns trust the right way: <b>validated against synthetic known-good / known-bad targets</b> with real detector metrics before any production model is wired in.</p>
     </div>
-    <p class="muted" style="margin-top:1.5em">Modality-agnostic core · 35 tests green · TPR 1.0 / FPR 0.0 on 22 golden cases</p>
+    <p class="muted" style="margin-top:1em">This is a reproducible MVP harness — <b>not a production hallucination detector yet</b>.</p>
+    <p class="muted" style="margin-top:.8em">Modality-agnostic core · 47 tests green · TPR 1.0 / FPR 0.0 on 42 golden cases</p>
     <p style="margin-top:1.5em;font-size:1.8rem" class="title-accent">Thank you — questions?</p>
+  </section>
+
+  <!-- 15 — thank you -->
+  <section class="slide" style="align-items:center;text-align:center">
+    <p class="lead" style="max-width:none;margin-bottom:.6em">Thank you</p>
+    <h1 class="title-accent">Ali Aminian &amp; the ByteByteAI team</h1>
+    <p class="big muted" style="margin-top:.4em">for the guidance, the curriculum,<br>and making this project possible.</p>
+    <p class="muted" style="margin-top:2em">Mirage · Attacker → Target → Judge → Report — validated before it's trusted</p>
   </section>
 
 </div>

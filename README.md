@@ -82,18 +82,18 @@ The MVP runs without model downloads, Ollama, torch, or external APIs.
 
 ## Current Validation Results
 
-The current golden set has 24 labeled cases:
+The current golden set has 42 labeled cases:
 
-- 14 RAG cases (unanswerable, false-premise, multi-hop, outdated-context, grounded)
-- 10 reasoning cases
-- 42 paired known-good/known-bad scored evaluations
+- 24 RAG cases (unanswerable, false-premise, multi-hop, outdated-context, grounded)
+- 18 reasoning cases
+- 73 paired known-good/known-bad scored evaluations
 
 Current synthetic validation:
 
 ```text
 RAG module        TPR=1.0  TNR=1.0  FPR=0.0  FNR=0.0
 Reasoning module  TPR=1.0  TNR=1.0  FPR=0.0  FNR=0.0
-golden cases: 24 (target >= 20 PASS)
+golden cases: 42 (target >= 20 PASS)
 ```
 
 These numbers are synthetic calibration results, not claims about real model
